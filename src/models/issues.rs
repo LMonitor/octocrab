@@ -36,6 +36,8 @@ pub struct Issue {
     pub pull_request: Option<PullRequestLink>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub closed_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub closed_by: Option<Author>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
 }
@@ -55,6 +57,7 @@ pub struct Comment {
     pub body_text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub body_html: Option<String>,
+    pub author_association: AuthorAssociation,
     pub user: Author,
     pub created_at: chrono::DateTime<chrono::Utc>,
     #[serde(skip_serializing_if = "Option::is_none")]

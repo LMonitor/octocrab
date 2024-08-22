@@ -17,6 +17,7 @@ pub mod forks;
 mod generate;
 mod merges;
 mod pulls;
+pub mod release_assets;
 pub mod releases;
 mod secrets;
 mod stargazers;
@@ -25,6 +26,8 @@ mod tags;
 mod teams;
 
 use crate::error::HttpSnafu;
+use crate::models::commits::GitCommitObject;
+use crate::models::repos;
 use crate::repos::file::GetReadmeBuilder;
 use crate::{models, params, Octocrab, Result};
 pub use branches::ListBranchesBuilder;
@@ -35,6 +38,7 @@ pub use file::{DeleteFileBuilder, GetContentBuilder, UpdateFileBuilder};
 pub use generate::GenerateRepositoryBuilder;
 pub use merges::MergeBranchBuilder;
 pub use pulls::ListPullsBuilder;
+pub use release_assets::ReleaseAssetsHandler;
 pub use releases::ReleasesHandler;
 pub use secrets::RepoSecretsHandler;
 pub use stargazers::ListStarGazersBuilder;
@@ -210,6 +214,32 @@ impl<'octo> RepoHandler<'octo> {
             .await
     }
 
+    /// Deletes an existing reference from the repository.
+    /// ```no_run
+    /// # async fn run() -> octocrab::Result<()> {
+    /// # let master_sha = "";
+    /// use octocrab::params::repos::Reference;
+    ///
+    /// // Deletes the "heads/temporary-branch" reference.
+    /// octocrab::instance()
+    ///     .repos("owner", "repo")
+    ///     .delete_ref(&Reference::Branch("temporary-branch".to_string()))
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn delete_ref(&self, reference: &params::repos::Reference) -> Result<()> {
+        let route = format!(
+            "/repos/{owner}/{repo}/git/refs/{ref}",
+            owner = self.owner,
+            repo = self.repo,
+            ref = reference.ref_url()
+        );
+        crate::map_github_error(self.crab._delete(route, None::<&()>).await?)
+            .await
+            .map(drop)
+    }
+
     /// Get repository content.
     /// ```no_run
     /// # async fn run() -> octocrab::Result<()> {
@@ -263,10 +293,12 @@ impl<'octo> RepoHandler<'octo> {
     ///     .commiter(CommitAuthor {
     ///         name: "Octocat".to_string(),
     ///         email: "octocat@github.com".to_string(),
+    ///         date: None,
     ///     })
     ///     .author(CommitAuthor {
     ///         name: "Ferris".to_string(),
     ///         email: "ferris@rust-lang.org".to_string(),
+    ///         date: None,
     ///     })
     ///     .send()
     ///     .await?;
@@ -318,10 +350,12 @@ impl<'octo> RepoHandler<'octo> {
     ///     .commiter(CommitAuthor {
     ///         name: "Octocat".to_string(),
     ///         email: "octocat@github.com".to_string(),
+    ///         date: None,
     ///     })
     ///     .author(CommitAuthor {
     ///         name: "Ferris".to_string(),
     ///         email: "ferris@rust-lang.org".to_string(),
+    ///         date: None,
     ///     })
     ///     .send()
     ///     .await?;
@@ -363,10 +397,12 @@ impl<'octo> RepoHandler<'octo> {
     ///     .commiter(CommitAuthor {
     ///         name: "Octocat".to_string(),
     ///         email: "octocat@github.com".to_string(),
+    ///         date: None,
     ///     })
     ///     .author(CommitAuthor {
     ///         name: "Ferris".to_string(),
     ///         email: "ferris@rust-lang.org".to_string(),
+    ///         date: None,
     ///     })
     ///     .send()
     ///     .await?;
@@ -463,6 +499,34 @@ impl<'octo> RepoHandler<'octo> {
         ListStarGazersBuilder::new(self)
     }
 
+    /// Lists languages for the specified repository.
+    /// The value shown for each language is the number of bytes of code written in that language.
+    ///
+    /// ```no_run
+    /// # async fn run() -> octocrab::Result<()> {
+    ///
+    /// // Get the languages used in the repository
+    /// let languages = octocrab::instance()
+    ///     .repos("owner", "repo")
+    ///     .list_languages()
+    ///     .await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn list_languages(&self) -> Result<models::repos::Languages> {
+        let route = format!(
+            "/repos/{owner}/{repo}/languages",
+            owner = self.owner,
+            repo = self.repo,
+        );
+        self.crab.get(route, None::<&()>).await
+    }
+
+    /// Creates a `ReleaseAssetsHandler` for the specified repository.
+    pub fn release_assets(&self) -> release_assets::ReleaseAssetsHandler<'_, '_> {
+        release_assets::ReleaseAssetsHandler::new(self)
+    }
+
     /// Creates a `ReleasesHandler` for the specified repository.
     pub fn releases(&self) -> releases::ReleasesHandler<'_, '_> {
         releases::ReleasesHandler::new(self)
@@ -512,6 +576,48 @@ impl<'octo> RepoHandler<'octo> {
     /// ```
     pub fn events(&self) -> events::ListRepoEventsBuilder<'_, '_> {
         events::ListRepoEventsBuilder::new(self)
+    }
+
+    /// Creates a new webhook for the specified repository.
+    ///
+    /// # Notes
+    /// Only authorized users or apps can modify repository webhooks.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// # async fn run() -> octocrab::Result<()> {
+    /// # let octocrab = octocrab::Octocrab::default();
+    /// use octocrab::models::hooks::{Hook, Config as HookConfig, ContentType as HookContentType};
+    ///
+    /// let config = HookConfig {
+    ///   url: "https://example.com".to_string(),
+    ///   content_type: Some(HookContentType::Json),
+    ///   insecure_ssl: None,
+    ///   secret: None
+    /// };
+    ///
+    /// let hook = Hook {
+    ///   name: "web".to_string(),
+    ///   config,
+    ///   ..Hook::default()
+    /// };
+    ///
+    /// let hook = octocrab.repos("owner", "repo").create_hook(hook).await?;
+    /// # Ok(())
+    /// # }
+    /// ```
+    pub async fn create_hook(
+        &self,
+        hook: crate::models::hooks::Hook,
+    ) -> crate::Result<crate::models::hooks::Hook> {
+        let route = format!(
+            "/repos/{org}/{repo}/hooks",
+            org = self.owner,
+            repo = self.repo
+        );
+        let res = self.crab.post(route, Some(&hook)).await?;
+
+        Ok(res)
     }
 
     /// Gets the combined status for the specified reference.
@@ -665,5 +771,113 @@ impl<'octo> RepoHandler<'octo> {
     /// Handle secrets on the repository
     pub fn secrets(&self) -> RepoSecretsHandler<'_> {
         RepoSecretsHandler::new(self)
+    }
+
+    /// Creates a new Git commit object.
+    /// See https://docs.github.com/en/rest/git/commits?apiVersion=2022-11-28#create-a-commit
+    /// ```no_run
+    /// # use octocrab::models::commits::GitCommitObject;
+    /// use octocrab::models::repos::CommitAuthor;
+    ///  async fn run() -> octocrab::Result<(GitCommitObject)> {
+    ///
+    /// let git_commit_object = octocrab::instance()
+    ///     .repos("owner", "repo")
+    ///     .create_git_commit_object("message", "tree")
+    ///     .signature("signature")
+    ///     .author(CommitAuthor{
+    ///             name: "name".to_owned(),
+    ///             email: "email".to_owned(),
+    ///             date: None
+    ///         })
+    ///     .send()
+    ///     .await;
+    /// #   git_commit_object
+    /// # }
+    /// ```
+    pub fn create_git_commit_object(
+        &self,
+        message: impl Into<String>,
+        tree: impl Into<String>,
+    ) -> CreateGitCommitObjectBuilder<'_, '_> {
+        CreateGitCommitObjectBuilder::new(
+            self,
+            self.owner.clone(),
+            self.repo.clone(),
+            message.into().to_owned(),
+            tree.into().to_owned(),
+        )
+    }
+}
+
+#[derive(serde::Serialize)]
+pub struct CreateGitCommitObjectBuilder<'octo, 'req> {
+    #[serde(skip)]
+    handler: &'octo RepoHandler<'req>,
+    owner: String,
+    repo: String,
+    message: String,
+    tree: String,
+    parents: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    author: Option<repos::CommitAuthor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    committer: Option<repos::CommitAuthor>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    signature: Option<String>,
+}
+
+impl<'octo, 'req> CreateGitCommitObjectBuilder<'octo, 'req> {
+    pub(crate) fn new(
+        handler: &'octo RepoHandler<'req>,
+        owner: String,
+        repo: String,
+        message: String,
+        tree: String,
+    ) -> Self {
+        Self {
+            handler,
+            owner,
+            repo,
+            message,
+            tree,
+            parents: Vec::new(),
+            author: None,
+            committer: None,
+            signature: None,
+        }
+    }
+
+    /// The author of the commit.
+    pub fn author(mut self, author: impl Into<repos::CommitAuthor>) -> Self {
+        self.author = Some(author.into());
+        self
+    }
+
+    /// The committer of the commit.
+    pub fn committer(mut self, committer: impl Into<repos::CommitAuthor>) -> Self {
+        self.committer = Some(committer.into());
+        self
+    }
+
+    /// The signature of the commit.
+    pub fn signature(mut self, signature: impl Into<String>) -> Self {
+        self.signature = Some(signature.into());
+        self
+    }
+
+    /// The parents of the commit.
+    pub fn parents(mut self, parents: Vec<String>) -> Self {
+        self.parents = parents;
+        self
+    }
+
+    /// Sends the request
+    pub async fn send(&self) -> Result<GitCommitObject> {
+        let route = format!(
+            "/repos/{owner}/{repo}/git/commits",
+            owner = self.owner,
+            repo = self.repo,
+        );
+        self.handler.crab.post(route, Some(&self)).await
     }
 }

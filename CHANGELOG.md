@@ -7,6 +7,98 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.39.0](https://github.com/XAMPPRocky/octocrab/compare/v0.38.0...v0.39.0) - 2024-07-30
+
+### Added
+- support permission on list_collaborators ([#630](https://github.com/XAMPPRocky/octocrab/pull/630))
+- add check run pull requests and list parameters ([#494](https://github.com/XAMPPRocky/octocrab/pull/494))
+- implement hook deliveries ([#668](https://github.com/XAMPPRocky/octocrab/pull/668))
+- allow sending non String payload with execute ([#665](https://github.com/XAMPPRocky/octocrab/pull/665))
+- added /user/blocks functionality ([#657](https://github.com/XAMPPRocky/octocrab/pull/657))
+- add method to create repo webhook ([#640](https://github.com/XAMPPRocky/octocrab/pull/640))
+
+### Fixed
+- use put instead of get for set_thread_subscription ([#661](https://github.com/XAMPPRocky/octocrab/pull/661))
+- *(builder)* Change add_retry_config signature to match others in OctocrabBuilder ([#643](https://github.com/XAMPPRocky/octocrab/pull/643))
+
+### Other
+- getting Code Scanning ([#669](https://github.com/XAMPPRocky/octocrab/pull/669))
+- added missing /repos/{owner}/{repo}/pulls/... handlers ([#546](https://github.com/XAMPPRocky/octocrab/pull/546)) ([#605](https://github.com/XAMPPRocky/octocrab/pull/605))
+- Properly mark feature-gated functionality in docs ([#662](https://github.com/XAMPPRocky/octocrab/pull/662))
+- repos/releases improvements ([#666](https://github.com/XAMPPRocky/octocrab/pull/666))
+- Add AutoRebaseEnabled to models.rs ([#660](https://github.com/XAMPPRocky/octocrab/pull/660))
+- cargo fmt ([#658](https://github.com/XAMPPRocky/octocrab/pull/658))
+- Fix issue [#635](https://github.com/XAMPPRocky/octocrab/pull/635) ([#637](https://github.com/XAMPPRocky/octocrab/pull/637))
+- Update issues.rs ([#634](https://github.com/XAMPPRocky/octocrab/pull/634))
+- Add head repo to create pr ([#636](https://github.com/XAMPPRocky/octocrab/pull/636))
+- Added support for make_latest in UpdateReleaseBuilder ([#646](https://github.com/XAMPPRocky/octocrab/pull/646))
+- Changing the user name from required to optional parameter ([#650](https://github.com/XAMPPRocky/octocrab/pull/650))
+- Update models.rs ([#651](https://github.com/XAMPPRocky/octocrab/pull/651))
+
+## [0.38.0](https://github.com/XAMPPRocky/octocrab/compare/v0.37.0...v0.38.0) - 2024-04-09
+
+### Added
+- Add `generate_release_notes`: ([#588](https://github.com/XAMPPRocky/octocrab/pull/588))
+
+### Other
+- Unify diff entry models ([#624](https://github.com/XAMPPRocky/octocrab/pull/624))
+- Added tests for .delete_thread_subscriptions() ([#620](https://github.com/XAMPPRocky/octocrab/pull/620))
+- Adding tests, and fixing missing error code. ([#619](https://github.com/XAMPPRocky/octocrab/pull/619))
+
+## [0.37.0](https://github.com/XAMPPRocky/octocrab/compare/v0.36.0...v0.37.0) - 2024-03-27
+
+### Fixed
+- [**breaking**] Change `Rate::reset` to `u64` ([#615](https://github.com/XAMPPRocky/octocrab/pull/615))
+
+### Other
+- Update graphql_client requirement from 0.13.0 to 0.14.0 ([#617](https://github.com/XAMPPRocky/octocrab/pull/617))
+- Added basic support for getting user profiles ([#616](https://github.com/XAMPPRocky/octocrab/pull/616))
+- Update manual github app authentication example ([#610](https://github.com/XAMPPRocky/octocrab/pull/610))
+
+## [0.36.0](https://github.com/XAMPPRocky/octocrab/compare/v0.35.0...v0.36.0) - 2024-03-19
+
+### Added
+- WASM Support ([#591](https://github.com/XAMPPRocky/octocrab/pull/591))
+
+### Other
+- fix some comments ([#611](https://github.com/XAMPPRocky/octocrab/pull/611))
+- Add status code to GithubError ([#607](https://github.com/XAMPPRocky/octocrab/pull/607))
+- Add `Pending` variant to `octocrab::models::workflows::Status` ([#604](https://github.com/XAMPPRocky/octocrab/pull/604))
+- Fix personal token auth for pagination ([#602](https://github.com/XAMPPRocky/octocrab/pull/602))
+- Fixed some `.gists()` functions, and wrote tests. ([#606](https://github.com/XAMPPRocky/octocrab/pull/606))
+- Allow directly passing SecretString ([#601](https://github.com/XAMPPRocky/octocrab/pull/601))
+
+## [0.35.0](https://github.com/XAMPPRocky/octocrab/compare/v0.34.3...v0.35.0) - 2024-03-10
+
+### Added
+- add repository list language support ([#595](https://github.com/XAMPPRocky/octocrab/pull/595))
+
+### Other
+- Added test for `actions().create_workflow_dispatch()` ([#603](https://github.com/XAMPPRocky/octocrab/pull/603))
+- added "Create a new Git commit object" ([#600](https://github.com/XAMPPRocky/octocrab/pull/600))
+- Added `check-suites` endpoints ([#596](https://github.com/XAMPPRocky/octocrab/pull/596))
+- Adding org secrets tests ([#599](https://github.com/XAMPPRocky/octocrab/pull/599))
+
+## [0.34.3](https://github.com/XAMPPRocky/octocrab/compare/v0.34.2...v0.34.3) - 2024-03-05
+
+### Other
+- Add delete_ref in RepoHandler ([#573](https://github.com/XAMPPRocky/octocrab/pull/573))
+- Adding tests to `orgs().secrets().create_or_update_secret()` ([#590](https://github.com/XAMPPRocky/octocrab/pull/590))
+
+## [0.34.2](https://github.com/XAMPPRocky/octocrab/compare/v0.34.1...v0.34.2) - 2024-03-04
+
+### Other
+- Update base64 requirement from 0.21.0 to 0.22.0 ([#592](https://github.com/XAMPPRocky/octocrab/pull/592))
+- Add Public and Release events ([#589](https://github.com/XAMPPRocky/octocrab/pull/589))
+- Adding tests for `actions().remove_selected_repo_from_org_secret()` ([#586](https://github.com/XAMPPRocky/octocrab/pull/586))
+- Fixed the `projects().delete_project().send() function ([#587](https://github.com/XAMPPRocky/octocrab/pull/587))
+- Added more tests, for `repos().delete()` ([#585](https://github.com/XAMPPRocky/octocrab/pull/585))
+- Adding test for actions().actions_delete_workflow_run_logs_test() ([#584](https://github.com/XAMPPRocky/octocrab/pull/584))
+- Fixing `snafu` version update ([#580](https://github.com/XAMPPRocky/octocrab/pull/580))
+- Fixing the test that `wiremock@v0.6.0` breaks. ([#579](https://github.com/XAMPPRocky/octocrab/pull/579))
+- Added some more tests ([#578](https://github.com/XAMPPRocky/octocrab/pull/578))
+- Added a test ([#577](https://github.com/XAMPPRocky/octocrab/pull/577))
+
 ## [0.34.1](https://github.com/XAMPPRocky/octocrab/compare/v0.34.0...v0.34.1) - 2024-02-09
 
 ### Other

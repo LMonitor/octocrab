@@ -8,10 +8,13 @@ use chrono::{DateTime, Utc};
 use serde::{de, Deserialize, Deserializer, Serialize};
 use url::Url;
 
+pub use apps::App;
+
 pub mod actions;
 pub mod activity;
 pub mod apps;
 pub mod checks;
+pub mod code_scannings;
 pub mod commits;
 pub mod events;
 pub mod gists;
@@ -27,8 +30,6 @@ pub mod webhook_events;
 pub mod workflows;
 
 mod date_serde;
-
-pub use apps::App;
 
 type BaseIdType = u64;
 
@@ -105,12 +106,14 @@ id_type!(
     CardId,
     CheckSuiteId,
     CheckRunId,
+    CodeScanningId,
     CommentId,
     InstallationId,
     IssueEventId,
     IssueId,
     JobId,
     HookId,
+    HookDeliveryId,
     LabelId,
     MilestoneId,
     NotificationId,
@@ -189,6 +192,10 @@ pub enum Event {
     AutomaticBaseChangeFailed,
     /// GitHub successfully attempted to automatically change the base branch of the pull request.
     AutomaticBaseChangeSucceeded,
+    /// Auto Rebase Enable
+    AutoRebaseEnabled,
+    /// Auto Squash Enable
+    AutoSquashEnabled,
     /// The base reference branch of the pull request changed.
     BaseRefChanged,
     /// Not documented in the Github issue events documentation.
@@ -417,6 +424,140 @@ pub struct Author {
     pub patch_url: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+}
+
+/// If a string is empty then deserialize it as none
+fn empty_string_is_none<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    // try to deserialize our input string
+    let cast = String::deserialize(deserializer)?;
+    // if this string is empty then return None
+    if cast.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(cast))
+    }
+}
+
+/// The full profile for a user
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct UserProfile {
+    pub login: String,
+    pub id: UserId,
+    pub node_id: String,
+    pub avatar_url: Url,
+    pub gravatar_id: String,
+    pub url: Url,
+    pub html_url: Url,
+    pub followers_url: Url,
+    pub following_url: Url,
+    pub gists_url: Url,
+    pub starred_url: Url,
+    pub subscriptions_url: Url,
+    pub organizations_url: Url,
+    pub repos_url: Url,
+    pub events_url: Url,
+    pub received_events_url: Url,
+    pub r#type: String,
+    pub site_admin: bool,
+    pub name: Option<String>,
+    pub company: Option<String>,
+    #[serde(deserialize_with = "empty_string_is_none")]
+    pub blog: Option<String>,
+    pub location: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    pub hireable: Option<bool>,
+    pub bio: Option<String>,
+    pub twitter_username: Option<String>,
+    pub public_repos: u64,
+    pub public_gists: u64,
+    pub followers: u64,
+    pub following: u64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// The simple profile for a GitHub user
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct SimpleUser {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub email: Option<String>,
+    pub login: String,
+    pub id: UserId,
+    pub node_id: String,
+    pub avatar_url: Url,
+    pub gravatar_id: String,
+    pub url: Url,
+    pub html_url: Url,
+    pub followers_url: Url,
+    pub following_url: Url,
+    pub gists_url: Url,
+    pub starred_url: Url,
+    pub subscriptions_url: Url,
+    pub organizations_url: Url,
+    pub repos_url: Url,
+    pub events_url: Url,
+    pub received_events_url: Url,
+    pub r#type: String,
+    pub site_admin: bool,
+    pub starred_at: Option<DateTime<Utc>>,
+}
+
+/// A user that is following another user
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct Follower {
+    pub login: String,
+    pub id: UserId,
+    pub node_id: String,
+    pub avatar_url: Url,
+    pub gravatar_id: String,
+    pub url: Url,
+    pub html_url: Url,
+    pub followers_url: Url,
+    pub following_url: Url,
+    pub gists_url: Url,
+    pub starred_url: Url,
+    pub subscriptions_url: Url,
+    pub organizations_url: Url,
+    pub repos_url: Url,
+    pub events_url: Url,
+    pub received_events_url: Url,
+    pub r#type: String,
+    pub site_admin: bool,
+    pub patch_url: Option<String>,
+}
+
+/// A user that is being followed by another user
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct Followee {
+    pub login: String,
+    pub id: UserId,
+    pub node_id: String,
+    pub avatar_url: Url,
+    pub gravatar_id: String,
+    pub url: Url,
+    pub html_url: Url,
+    pub followers_url: Url,
+    pub following_url: Url,
+    pub gists_url: Url,
+    pub starred_url: Url,
+    pub subscriptions_url: Url,
+    pub organizations_url: Url,
+    pub repos_url: Url,
+    pub events_url: Url,
+    pub received_events_url: Url,
+    pub r#type: String,
+    pub site_admin: bool,
+    pub patch_url: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -956,5 +1097,5 @@ pub struct Rate {
     pub limit: usize,
     pub used: usize,
     pub remaining: usize,
-    pub reset: usize,
+    pub reset: u64,
 }

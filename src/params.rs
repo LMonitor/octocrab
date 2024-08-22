@@ -4,6 +4,15 @@
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
+pub enum AlertState {
+    Dismissed,
+    Open,
+}
+
+/// The status of a issue or pull request.
+#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
 pub enum State {
     All,
     Open,
@@ -151,6 +160,113 @@ pub mod checks {
         pub alt: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub caption: Option<String>,
+    }
+
+    #[derive(serde::Serialize, serde::Deserialize, Debug)]
+    pub struct CheckRunAnnotation {
+        pub path: String,
+        pub start_line: u32,
+        pub end_line: u32,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub start_column: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub end_column: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub annotation_level: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub title: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub message: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        pub raw_details: Option<String>,
+        pub blob_href: String,
+    }
+}
+
+pub mod code_scannings {
+    //! Parameter types for the code scanning API.
+
+    /// What to sort the results by. Can be either `created`, `updated`,
+    /// or `comments`.
+    #[derive(Debug, Clone, Copy, serde::Serialize)]
+    #[serde(rename_all = "snake_case")]
+    #[non_exhaustive]
+    pub enum Sort {
+        Created,
+        Updated,
+    }
+
+    /// The reference for the code scanning alert.
+    /// This can be a branch, tag, or commit.
+    #[derive(Debug, Clone, serde::Serialize)]
+    #[serde(rename_all = "snake_case")]
+    #[non_exhaustive]
+    pub enum Reference {
+        Branch(String),
+        Tag(String),
+        Commit(String),
+    }
+
+    /// The severity of the alert.
+    #[derive(Debug, Clone, Copy, serde::Serialize)]
+    #[serde(rename_all = "snake_case")]
+    #[non_exhaustive]
+    pub enum Severity {
+        Info,
+        Low,
+        Medium,
+        High,
+        Critical,
+    }
+
+    /// A generic filter type that allows you to filter either by exact match,
+    /// any match, or no matches.
+    #[derive(Debug, Clone, Copy)]
+    #[non_exhaustive]
+    pub enum Filter<T> {
+        Matches(T),
+        Any,
+        None,
+    }
+
+    impl<T: serde::Serialize> serde::Serialize for crate::params::code_scannings::Filter<T> {
+        fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+        where
+            S: serde::Serializer,
+        {
+            match self {
+                Self::Matches(val) => val.serialize(serializer),
+                Self::Any => serializer.serialize_str("*"),
+                Self::None => serializer.serialize_str("none"),
+            }
+        }
+    }
+
+    impl<T: serde::Serialize> From<T> for crate::params::code_scannings::Filter<T> {
+        fn from(value: T) -> Self {
+            Self::Matches(value)
+        }
+    }
+
+    #[cfg(test)]
+    mod tests {
+
+        #[test]
+        fn serialize() {
+            assert_eq!(
+                "1234",
+                serde_json::to_string(&crate::params::code_scannings::Filter::Matches(1234))
+                    .unwrap()
+            );
+            assert_eq!(
+                r#""*""#,
+                serde_json::to_string(&crate::params::code_scannings::Filter::<()>::Any).unwrap()
+            );
+            assert_eq!(
+                r#""none""#,
+                serde_json::to_string(&crate::params::code_scannings::Filter::<()>::None).unwrap()
+            );
+        }
     }
 }
 
@@ -427,6 +543,18 @@ pub mod repos {
             Newest,
             Oldest,
             Stargazers,
+        }
+    }
+
+    pub mod release_assets {
+
+        #[derive(Debug, Clone, Copy, serde::Serialize)]
+        #[serde(rename_all = "lowercase")]
+        #[non_exhaustive]
+        pub enum State {
+            Open,
+            Uploaded,
+            Starter,
         }
     }
 }
